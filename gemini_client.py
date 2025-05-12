@@ -23,6 +23,6 @@ def format_summary_to_prompt(summary: dict) -> str:
 
 def analyze_cluster(summary):
     prompt = format_summary_to_prompt(summary)
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     response = model.generate_content(prompt)
     return response.text
