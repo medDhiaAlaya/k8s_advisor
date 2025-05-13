@@ -1,8 +1,20 @@
+# Standard imports
 from rich import print
 from rich.console import Console
 from rich.table import Table
 from k8s_collector import get_detailed_cluster_info
-from gemini_client import analyze_cluster
+
+# AI modules
+from ai.analysis import analyze_cluster
+from ai.monitoring import generate_alerting_rules
+from ai.autohealing import suggest_auto_healing
+from ai.cost import suggest_cost_optimizations
+from ai.security import check_security_practices
+
+# Utils
+from utils import display_banner
+
+import json
 
 console = Console()
 
@@ -18,7 +30,6 @@ def display_summary(summary):
         node_table = Table(title=f"🖥️ Node: [bold blue]{node['name']}[/bold blue]")
         node_table.add_column("Info", style="cyan", no_wrap=True)
         node_table.add_column("Value", style="magenta")
-
         node_table.add_row("Pod Count", str(node["pod_count"]))
         node_table.add_row("Restart Count", str(node["restart_count"]))
         node_table.add_row("Pods", ", ".join(node["pods"]) if node["pods"] else "-")
@@ -33,35 +44,56 @@ def display_summary(summary):
         for pod in summary["pending_pods"]:
             print(f"  - {pod}")
 
-
-def display_gemini_recommendations(recommendations):
-    table = Table(title="🤖 Gemini AI Recommendations")
-    table.add_column("Issue", style="bold red", width=30)
-    table.add_column("Recommendation", style="green")
-
-    for item in recommendations:
-        issue = item.get("issue", "N/A")
-        recommendation = item.get("recommendation", "N/A")
-        table.add_row(issue, recommendation)
-
+def display_recommendations(title, data, key1, key2, color1="bold red", color2="green"):
+    table = Table(title=title)
+    table.add_column(key1.capitalize(), style=color1, width=30)
+    table.add_column(key2.capitalize(), style=color2)
+    for item in data:
+        table.add_row(item.get(key1, "N/A"), item.get(key2, "N/A"))
     console.print(table)
 
 def main():
     try:
+        display_banner()
+
         print("[cyan]🚀 Starting Kubernetes AI Advisor CLI...[/cyan]")
         print("\n[cyan]🔍 Collecting cluster data...[/cyan]")
         summary = get_detailed_cluster_info()
         display_summary(summary)
 
-        print("\n[cyan]🧠 Asking Gemini for analysis...[/cyan]")
+        print("\n[cyan]🧠 Asking Gemini for cluster analysis...[/cyan]")
         recommendations = analyze_cluster(summary)
-        display_gemini_recommendations(recommendations)
+        display_recommendations("🤖 Gemini AI Recommendations", recommendations, "issue", "recommendation")
 
+        print("\n[cyan]📡 Generating monitoring alerts...[/cyan]")
+        alerts = generate_alerting_rules(summary)
+        display_recommendations("📈 Monitoring Alerts", alerts, "alert_name", "description")
+
+        print("\n[cyan]🔄 Suggesting auto-healing actions...[/cyan]")
+        healing = suggest_auto_healing(summary)
+        display_recommendations("🛠️ Auto-Healing Suggestions", healing, "trigger", "action")
+
+        print("\n[cyan]💰 Looking for cost optimizations...[/cyan]")
+        cost = suggest_cost_optimizations(summary)
+        display_recommendations("💸 Cost Optimization Tips", cost, "area", "suggestion")
+
+        print("\n[cyan]🔐 Performing security audit...[/cyan]")
+        security = check_security_practices(summary)
+        display_recommendations("🔒 Security Best Practices", security, "risk", "recommendation")
+
+        # Save all results
         with open("recommendations.txt", "w") as f:
-            import json
             json.dump(recommendations, f, indent=2)
+        with open("alerts.txt", "w") as f:
+            json.dump(alerts, f, indent=2)
+        with open("healing.txt", "w") as f:
+            json.dump(healing, f, indent=2)
+        with open("cost.txt", "w") as f:
+            json.dump(cost, f, indent=2)
+        with open("security.txt", "w") as f:
+            json.dump(security, f, indent=2)
 
-        print("\n[green]✅ Recommendations saved to recommendations.txt[/green]")
+        print("\n[green]✅ All results saved to disk.[/green]")
 
     except Exception as e:
         print(f"[red]❌ Error: {e}[/red]")
